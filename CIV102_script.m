@@ -84,11 +84,15 @@ for i = 1:numxsections
     % bh^3/12 for every bit
     Itot = 0;
     for j = 1:length(xsections{i})
+        ax = xsections{i}(j, 1);
+        ay = xsections{i}(j, 2);
+        bx = xsections{i}(j, 3);
+        by = xsections{i}(j, 4);
         y = (by + ay) / 2;
         h = (ay - by);
         b = (bx - ax);
         I = b * h^3 / 12;
-        ay2 = b * h * y^2;
+        ay2 = b * h * (abs(y - ybars(i)))^2;
         Itot = Itot + I + ay2;
     end
     Is(i) = Itot;
