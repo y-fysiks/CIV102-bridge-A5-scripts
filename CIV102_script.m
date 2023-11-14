@@ -18,41 +18,54 @@ xsection2 = [0, 75 + 1.27, 100, 75;
             85 - 1.27, 75, 90, 75 - 1.27;
             90 - 1.27, 75 - 1.27, 90, 0];
 
-xsections = {xsection1}; % list of all cross sections
+xsections = {xsection1, xsection2}; % list of all cross sections
 
-xsectionchanges = []; % define where the x section change is. Size is n - 1
+xsectionpts = [0, 1200]; % define where the x section change is. Size is n - 1
 
 numxsections = length(xsections);
 
-glueheights = [75];
-numglues = 1;
+glueheights = [75, 50];
+numglues = 2;
 
 %% 1. SFD, BMD under train loading
-x_train = [52 228 392 568 732 908]; % Train Load Locations
+x_train = [52 228 392 568 732 908] - 51; % Train Load Locations
 P_train = [1 1 1 1 1 1] * P/6;
 
-train_locs = [480, 0];
+train_locs = x(x < (L - x_train(end))) + 1;
 n_train = length(train_locs); % num of train locations
 SFDi = zeros(n_train, n+1); % 1 SFD for each train loc.
 BMDi = zeros(n_train, n+1); % 1 BMD for each train loc.
 
 % Solve for SFD and BMD with the train at different locations
-for i = 1:n_train 
+for i = 1:n_train
     % start location of train
     loc = train_locs(i);
     
     % sum of moments at A eqn
+    By = sum((loc + x_train) .* P_train) / L;
     % sum of Fy eqn 
+    Ay = sum(P_train) - By;
  
     % construct applied loads
-    % w(x)
- 
-    % SFD = num. integral(w)
-    % BMD = num. integral(SFD)
+    w = zeros(1, n + 1);
+    w(loc + x_train) = -P_train;
+    w(1) = Ay;
+    w(n + 1) = By;
+    
+    SFDi(i, :) = cumsum(w);
+    BMDi(i, :) = cumtrapz(SFDi(i,:));
+    plot(x + 1, SFDi(i, :))
+    hold on
+
 end
+hold off
 SFD = max(abs(SFDi)); % SFD envelope
 BMD = max(BMDi); % BMD envelope
 
+figure
+plot(x + 1, SFD)
+figure
+plot(x + 1, BMD)
 
 %% 2. Geometric properties of cross sections
 
@@ -130,7 +143,7 @@ for i = 1:numxsections
         Qgs(j) = Qtop;
     end
     QCent(i) = Qc;
-    Qglues(i) = Qgs;
+    Qglues(i, :) = Qgs;
 end
 
 
