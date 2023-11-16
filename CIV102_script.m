@@ -32,6 +32,8 @@ x_train = [52 228 392 568 732 908] - 51; % Train Load Locations
 P_train = [1 1 1 1 1 1] * P/6;
 
 train_locs = x(x < (L - x_train(end))) + 1;
+train_locs = (1-x_train(end)):1:L - 2;
+
 n_train = length(train_locs); % num of train locations
 SFDi = zeros(n_train, n+1); % 1 SFD for each train loc.
 BMDi = zeros(n_train, n+1); % 1 BMD for each train loc.
@@ -39,33 +41,37 @@ BMDi = zeros(n_train, n+1); % 1 BMD for each train loc.
 % Solve for SFD and BMD with the train at different locations
 for i = 1:n_train
     % start location of train
-    loc = train_locs(i);
+    locs = train_locs(i) + x_train;
+
+    locs = locs(locs > 1 & locs < L - 2);
     
+    p_applicable = P_train(locs > 1 & locs < L - 2);
+
     % sum of moments at A eqn
-    By = sum((loc + x_train) .* P_train) / L;
+    By = sum((locs) .* p_applicable) / L;
     % sum of Fy eqn 
-    Ay = sum(P_train) - By;
+    Ay = sum(p_applicable) - By;
  
     % construct applied loads
     w = zeros(1, n + 1);
-    w(loc + x_train) = -P_train;
+    w(locs) = -p_applicable;
     w(1) = Ay;
     w(n + 1) = By;
     
     SFDi(i, :) = cumsum(w);
-    BMDi(i, :) = cumtrapz(SFDi(i,:));
+    BMDi(i, :) = cumsum(SFDi(i,:));
     plot(x + 1, SFDi(i, :))
     hold on
 
 end
 hold off
-SFD = max(abs(SFDi)); % SFD envelope
-BMD = max(BMDi); % BMD envelope
+SFE = max(abs(SFDi)); % SFD envelope
+BME = max(BMDi); % BMD envelope
 
 figure
-plot(x + 1, SFD)
+plot(x + 1, SFE)
 figure
-plot(x + 1, BMD)
+plot(x + 1, BME)
 
 %% 2. Geometric properties of cross sections
 
