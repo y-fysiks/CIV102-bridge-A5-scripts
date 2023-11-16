@@ -2,7 +2,7 @@ clear; close all;
 %% 0. Initialize Parameters
 L = 1200; % Length of bridge
 n = 1200; % Discretize into 1 mm seg.
-P = 400; % Total weight of train [N]
+P = 400; % Total weight of train IF all are freight trains[N]
 x = linspace(0, L, n+1); % x-axis generate n + 1 evenly spaced points
 
 xsection1 = [0, 75 + 1.27, 100, 75;
@@ -29,7 +29,10 @@ numglues = 2;
 
 %% 1. SFD, BMD under train loading
 x_train = [52 228 392 568 732 908] - 51; % Train Load Locations
-P_train = [1 1 1 1 1 1] * P/6;
+P_train_LC1 = [1 1 1 1 1 1] * P/6;
+P_train_LC2 = [1.35 1.35 1 1 1 1] * P;
+
+P_train = P_train_LC2;
 
 train_locs = x(x < (L - x_train(end))) + 1;
 train_locs = (1-x_train(end)):1:L - 2;
