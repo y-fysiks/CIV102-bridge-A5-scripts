@@ -18,24 +18,34 @@ xsection2 = [0, 75 + 1.27, 100, 75;
             85 - 1.27, 75, 90, 75 - 1.27;
             90 - 1.27, 75 - 1.27, 90, 0];
 
+
+
+
 xsections = {xsection1, xsection2}; % list of all cross sections
 
 xsectionpts = [0, 1200]; % define where the x section change is. Size is n - 1
 
 numxsections = length(xsections);
 
+ymaxs = zeros(1, numxsections);
+for i = 1:numxsections
+    ymaxs(i) = max(max(xsections{i}(:, 2)), max(xsections{i}(:, 4)));
+end
+
 glueheights = [75, 50];
 numglues = 2;
 
 %% 1. SFD, BMD under train loading
-x_train = [52 228 392 568 732 908] - 51; % Train Load Locations
-P_train_LC1 = [1 1 1 1 1 1] * P/6;
-P_train_LC2 = [1.35 1.35 1 1 1 1] * P;
+x_train = [52 228 392 568 732 908]; % Train Load Locations
+x_train = x_train - 52;
+P_train_LC1 = [1 1 1 1 1 1] * (P/6);
+P_train_LC2 = [1.35 1.35 1 1 1 1] * (P/6);
+
 
 P_train = P_train_LC2;
 
-train_locs = x(x < (L - x_train(end))) + 1;
-train_locs = (1-x_train(end)):1:L - 2;
+% train_locs = x(x < (L - x_train(end))) + 1;
+train_locs = (-x_train(end)):1:L;
 
 n_train = length(train_locs); % num of train locations
 SFDi = zeros(n_train, n+1); % 1 SFD for each train loc.
@@ -46,9 +56,12 @@ for i = 1:n_train
     % start location of train
     locs = train_locs(i) + x_train;
 
-    locs = locs(locs > 1 & locs < L - 2);
+    logical = locs >= 0 & locs <= L;
+
+    locs = locs(logical);
+
     
-    p_applicable = P_train(locs > 1 & locs < L - 2);
+    p_applicable = P_train(logical);
 
     % sum of moments at A eqn
     By = sum((locs) .* p_applicable) / L;
@@ -57,13 +70,13 @@ for i = 1:n_train
  
     % construct applied loads
     w = zeros(1, n + 1);
-    w(locs) = -p_applicable;
-    w(1) = Ay;
-    w(n + 1) = By;
+    w(locs + 1) = -p_applicable;
+    w(1) = w(1) + Ay;
+    w(L + 1) = w(L + 1) + By;
     
     SFDi(i, :) = cumsum(w);
-    BMDi(i, :) = cumsum(SFDi(i,:));
-    plot(x + 1, SFDi(i, :))
+    BMDi(i, :) = cumtrapz(SFDi(i,:));
+    plot(x, SFDi(i, :), "r")
     hold on
 
 end
@@ -72,9 +85,9 @@ SFE = max(abs(SFDi)); % SFD envelope
 BME = max(BMDi); % BMD envelope
 
 figure
-plot(x + 1, SFE)
+plot(x, SFE)
 figure
-plot(x + 1, BME)
+plot(x, BME)
 
 %% 2. Geometric properties of cross sections
 
@@ -113,9 +126,9 @@ for i = 1:numxsections
         y = (by + ay) / 2;
         h = (ay - by);
         b = (bx - ax);
-        I = b * h^3 / 12;
+        Iloc = b * h^3 / 12;
         ay2 = b * h * (abs(y - ybars(i)))^2;
-        Itot = Itot + I + ay2;
+        Itot = Itot + Iloc + ay2;
     end
     Is(i) = Itot;
     
@@ -156,3 +169,54 @@ for i = 1:numxsections
 end
 
 
+
+%% 3. Calculate Applied Stress
+S_top = zeros(1, n + 1);
+S_bot = zeros(1, n + 1);
+T_cent = zeros(1, n + 1);
+T_glue = zeros(numgles, n + 1);
+for i = 1:n + 1
+    S_top(i) = ymaxs(i) * BME(i) / I(i);
+end
+%% 4. Material and Thin Plate Buckling Capacities
+E = 4000;
+mu = 0.2;
+S_tens = 
+S_comp = 
+T_max = 
+T_gmax = 
+S_buck1 = 
+S_buck2 = 
+S_buck3 = 
+T_buck = 
+%% 5. FOS
+FOS_tens = 
+FOS_comp = 
+FOS_shear = 
+FOS_glue = 
+FOS_buck1 = 
+FOS_buck2 = 
+FOS_buck3 = 
+FOS_buckV = 
+%% 6. Min FOS and the failure load Pfail
+minFOS = 
+Pf =
+%% 7. Vfail and Mfail
+Mf_tens = 
+Mf_comp = 
+Vf_shear = 
+Vf_glue = 
+Mf_buck1 = 
+Mf_buck2 = 
+Mf_buck3 = 
+Vf_buckV = 
+%% 8. Output plots of Vfail and Mfail
+subplot(2,3,1)
+hold on; grid on; grid minor;
+plot(x, Vf_shear, 'r')
+plot(x, -Vf_shear.* SFD, 'r')
+plot(x, SFDi, 'k');
+plot([0, L], [0, 0], 'k', 'LineWidth', 2)
+legend('Matboard Shear Failure')
+xlabel('Distance along bridge (mm)')
+ylabel('Shear Force (N)')
