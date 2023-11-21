@@ -15,31 +15,14 @@ section2 = [100, 1.27, 1.27/2;
             1.27 * 2, 75 - 1.27, (75 - 1.27) / 2 + 1.27;
             10, 1.27, 3 * 1.27 / 2]; % b, h, ybar
 
-% section1 = [0, 75 + 1.27, 100, 75;
-%             10, 75, 15 + 1.27, 75 - 1.27;
-%             10, 75 - 1.27, 10 + 1.27, 0;
-%             10 + 1.27, 1.27, 90 - 1.27, 0; % bottom center
-%             85 - 1.27, 75, 90, 75 - 1.27;
-%             90 - 1.27, 75 - 1.27, 90, 0];
-% 
-% section2 = [0, 75 + 1.27, 100, 75;
-%             10, 75, 15 + 1.27, 75 - 1.27;
-%             10, 75 - 1.27, 10 + 1.27, 0;
-%             10 + 1.27, 1.27, 90 - 1.27, 0; % bottom center
-%             85 - 1.27, 75, 90, 75 - 1.27;
-%             90 - 1.27, 75 - 1.27, 90, 0];
-
-
 xsections = {section1, section2}; % list of all cross sections
 
 xsectionpts = [0, 1200]; % define where the x section change is. Size is n - 1
 
 numxsections = length(xsections);
 
-
-
 glueheights = [75, 50];
-numglues = 2;
+numglues = size(glueheights, 1);
 
 %% 1. SFD, BMD under train loading
 x_train = [52 228 392 568 732 908]; % Train Load Locations
@@ -66,7 +49,6 @@ for i = 1:n_train
 
     locs = locs(logical);
 
-    
     p_applicable = P_train(logical);
 
     % sum of moments at A eqn
@@ -81,7 +63,7 @@ for i = 1:n_train
     w(round((L + 1.0) / L * n)) = w(round((L + 1.0) / L * n)) + By;
     
     SFDi(i, :) = cumsum(w);
-    BMDi(i, :) = cumtrapz(SFDi(i,:));
+    BMDi(i, :) = cumsum(SFDi(i,:));
     plot(x, SFDi(i, :), "r")
     hold on
 
@@ -260,16 +242,33 @@ for i = 1:(n + 1)
 end
 
 %% 4. Material and Thin Plate Buckling Capacities
-% E = 4000;
-% mu = 0.2;
-% S_tens = 
-% S_comp = 
-% T_max = 
-% T_gmax = 
-% S_buck1 = 
-% S_buck2 = 
-% S_buck3 = 
-% T_buck = 
+webDist = 100;
+webHs = zeros(1, n + 1);
+for i = 1:n + 1
+    cnt = 1;
+    for j = 1:size(xsectionsdsc{i}, 1)
+        b = xsectionsdsc{i}(j, 1);
+        h = xsectionsdsc{i}(j, 2);
+        y = xsectionsdsc{i}(j, 3);
+        if h > b
+            webHs(cnt) = max(webHs(cnt), xsectionsdsc{i}(j, 2));
+            cnt = cnt + 1;
+        end
+    end
+end
+
+E = 4000;
+mu = 0.2;
+t = 1.27;
+S_tens = max(S_top, S_bot);
+S_comp = min(S_top, S_bot);
+T_max = T_cent;
+T_gmax = max(T_glue);
+S_buck1 = 4*pi^2*E / (12 * (1 - mu^2)) * ((t/bTops)^2);
+S_buck2 = 4*pi^2*E / (12 * (1 - mu^2)) * ((t/)^2);
+S_buck3 = 6*pi^2*E / (12*(1-mu^2)) * (t/ybars)^2;
+T_buck = 5*pi^2*E/(12*(1-mu^2)) * ((t/webHs)^2 + (t/webDist)^2);
+
 
 %% 5. FOS
 % FOS_tens =  
