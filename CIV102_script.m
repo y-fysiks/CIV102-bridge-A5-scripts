@@ -5,24 +5,30 @@ n = 1200; % Discretize into 1 mm seg.
 P = 400; % Total weight of train IF all are freight trains[N]
 x = linspace(0, L, n+1); % x-axis generate n + 1 evenly spaced points
 
+% Cross sections are defined by an nx3 matrix. Each row represents a
+% rectangle. 
+% section[i,1] = b, section[i, 2] = h, section[i, 3] = ybar
+% **Coordinates measured as right and down positive**
 section1 = [100, 1.27, 1.27/2;
             80, 1.27, 1.27/2 + 75;
-            1.27 * 2, 75 - 1.27, (75 - 1.27) / 2 + 1.27;
+            1.27 * 2, 75, 75 / 2 + 1.27;
             10, 1.27, 3 * 1.27 / 2]; % b, h, ybar
 
-section2 = [100, 1.27, 1.27/2;
-            80, 1.27, 1.27/2 + 75;
-            1.27 * 2, 75 - 1.27, (75 - 1.27) / 2 + 1.27;
-            10, 1.27, 3 * 1.27 / 2]; % b, h, ybar
+xsections = {section1, section1}; % cell array of all cross sections
 
-xsections = {section1, section2}; % list of all cross sections
-
-xsectionpts = [0, 1200]; % define where the x section change is. Size is n - 1
-
+% define the location of each cross section. At least two required.
+xsectionpts = [0, 1200]; 
 numxsections = length(xsections);
 
-glueheights = [75, 50];
-numglues = size(glueheights, 1);
+% Define top flange parameters
+topConstThick = 1.27;
+topConstWidth = 80 - 2 * 1.27;
+topFreeThick = 1.27;
+topFreeWidth = 10;
+
+% Define glue joints
+glueheights = [0, 1.27]; %#ok<*NBRAK2>
+numglues = length(glueheights);
 
 %% 1. SFD, BMD under train loading
 x_train = [52 228 392 568 732 908]; % Train Load Locations
@@ -30,29 +36,28 @@ x_train = x_train - 52;
 P_train_LC1 = [1 1 1 1 1 1] * (P/6);
 P_train_LC2 = [1.35 1.35 1 1 1 1] * (P/6);
 
-
 P_train = P_train_LC2;
 
-% train_locs = x(x < (L - x_train(end))) + 1;
+% array of locations the end of the train can take, in intervals of 1mm
 train_locs = (-x_train(end)):1:L;
 
-n_train = length(train_locs); % num of train locations
-SFDi = zeros(n_train, n+1); % 1 SFD for each train loc.
-BMDi = zeros(n_train, n+1); % 1 BMD for each train loc.
+n_train = length(train_locs); % number of train locations
+SFDi = zeros(n_train, n+1); % 1 SFD for each train location
+BMDi = zeros(n_train, n+1); % 1 BMD for each train location
 
 % Solve for SFD and BMD with the train at different locations
 for i = 1:n_train
     % start location of train
     locs = train_locs(i) + x_train;
 
-    logical = locs >= 0 & locs <= L;
-
+    % ignore locations not on bridge
+    logical = locs >= 0 & locs <= L; 
     locs = locs(logical);
-
-    p_applicable = P_train(logical);
+    p_applicable = P_train(logical); % ignore corresponding loads
 
     % sum of moments at A eqn
     By = sum((locs) .* p_applicable) / L;
+
     % sum of Fy eqn 
     Ay = sum(p_applicable) - By;
  
@@ -62,23 +67,18 @@ for i = 1:n_train
     w(1) = w(1) + Ay;
     w(round((L + 1.0) / L * n)) = w(round((L + 1.0) / L * n)) + By;
     
+    % Integrate the applied loads to get SFD
     SFDi(i, :) = cumsum(w);
+    % Integrate the SFD to get BMD
     BMDi(i, :) = cumsum(SFDi(i,:));
-    plot(x, SFDi(i, :), "r")
-    hold on
 
 end
-hold off
 SFE = max(abs(SFDi)); % SFD envelope
 BME = max(BMDi); % BMD envelope
 
-figure
-plot(x, SFE)
-figure
-plot(x, BME)
-
 %% 2. Geometric properties of cross sections
 
+% Discretized cross-sections. One cross section per mm.
 xsectionsdsc = cell(1, n + 1);
 xsectionsdsc(round(xsectionpts(1) / L * n) + 1) = xsections(1); 
 for i = 1:(numxsections - 1)
@@ -99,30 +99,31 @@ end
 ybars = zeros(1, n + 1);
 Is = zeros(1, n + 1);
 QCent = zeros(1, n + 1);
-Qglues = zeros(n + 1, numglues);
+Qglues = zeros(numglues, n + 1);
+Areas = zeros(1, n + 1);
 
-
-
+% ybar, I, Qcent, Qglues
 for i = 1:(n + 1)
     if i > 1 && isequal(xsectionsdsc{i}, xsectionsdsc{i - 1})
         ybars(i) = ybars(i - 1);
         Is(i) = Is(i - 1);
         QCent(i) = QCent(i - 1);
-        Qglues(i) = Qglues(i - 1);
+        Qglues(:, i) = Qglues(:, i - 1);
+        Areas(i) = Areas(i - 1);
         continue
     end
     % ybar, I, Qcent
     % sum the areas times distance to centroid of each individual square
     sumAD = 0;
     sumAreas = 0;
-    for j = 1:length(xsectionsdsc{i})
+    for j = 1:size(xsectionsdsc{i}, 1)
         % ybar
         b = xsectionsdsc{i}(j, 1);
         h = xsectionsdsc{i}(j, 2);
         y = xsectionsdsc{i}(j, 3);
         sumAD = sumAD + b * h * y;
         sumAreas = sumAreas + b * h;
-
+        Areas(i) = Areas(i) + b * h;
     end
     ybars(i) = sumAD / sumAreas;
 
@@ -141,8 +142,7 @@ for i = 1:(n + 1)
     
     % all Qs
     Qc = 0;
-    Qgs = zeros(1, numglues);
-    for j = 1:length(xsectionsdsc{i})
+    for j = 1:size(xsectionsdsc{i}, 1)
         % calculate area above centroidal axis of the jth shape, as well as
         % centroid position relative to y axis
         b = xsectionsdsc{i}(j, 1);
@@ -170,13 +170,12 @@ for i = 1:(n + 1)
             if y1 < glueheights(j)
                 area = b * (min(y2, glueheights(j)) - y1);
                 centY = (min(y2, glueheights(j)) + y1) / 2;
-                Qc = Qc + area * (glueheights(j) - centY);
+                Qtop = Qtop + area * (ybars(i) - centY);
             end
         end
-        Qgs(j) = Qtop;
+        Qglues(j, i) = Qtop;
     end
     QCent(i) = Qc;
-    Qglues(i, :) = Qgs;
 end
 
 % calculate max b
@@ -194,12 +193,13 @@ for i = 1:n + 1
         b = xsectionsdsc{i}(j, 1);
         h = xsectionsdsc{i}(j, 2);
         y = xsectionsdsc{i}(j, 3);
-        y1 = y - h / 2;
-        y2 = y + h / 2;
-        if y2 >= ybars(i) && y1 < ybars(i)
+        yb = round(ybars(i));
+        y1 = round(y - (h / 2), 2);
+            y2 = round(y + (h / 2), 2);
+        if y2 >= yb && y1 < yb
             bBot = bBot + b;
         end
-        if y2 > ybars(i) && y1 <= ybars(i)
+        if y2 > yb && y1 <= yb
             bTop = bTop + b;
         end
     end
@@ -212,12 +212,14 @@ for i = 1:n + 1
             b = xsectionsdsc{i}(k, 1);
             h = xsectionsdsc{i}(k, 2);
             y = xsectionsdsc{i}(k, 3);
-            y1 = y - h / 2;
-            y2 = y + h / 2;
-            if y2 >= glueheights(j) && y1 < glueheights(j)
+            y1 = round(y - (h / 2), 2);
+            y2 = round(y + (h / 2), 2);
+            glueh = round(glueheights(j), 2);
+            if y2 >= glueh && y1 < glueh
                 bBot = bBot + b;
             end
-            if y2 > glueheights(j) && y1 <= glueheights(j)
+
+            if y2 > glueh && y1 <= glueh
                 bTop = bTop + b;
             end
         end
@@ -228,79 +230,114 @@ end
 
 
 %% 3. Calculate Applied Stress
-S_top = zeros(1, n + 1);
-S_bot = zeros(1, n + 1);
-T_cent = zeros(1, n + 1);
 T_glue = zeros(numglues, n + 1);
-for i = 1:(n + 1)
-    S_top(i) = -(ybots(i)- ybars(i)) * BME(i) / Is(i);
-    S_bot(i) = ybars(i) * BME(i) / Is(i);
-    T_cent(i) = SFE(i) * QCent(i) / Is(i) / min(bCentBot(i), bCentTop(i));
-    for j = 1:numglues
-        T_glue(j, i) = SFE(i) * QCent(i) / Is(i) / min(bGluesTop(j, i), bGluesBot(j, i));
-    end
+S_top = -ybars .* BME ./ Is;
+S_bot = (ybots - ybars) .* BME ./ Is;
+T_cent = SFE .* QCent ./ Is ./ min(bCentBot, bCentTop);
+
+for j = 1:numglues
+    T_glue(j, :) = SFE .* Qglues(j, :) ./ Is ./ min(bGluesTop(j, :), bGluesBot(j, :));
 end
 
 %% 4. Material and Thin Plate Buckling Capacities
-webDist = 100;
-webHs = zeros(1, n + 1);
-for i = 1:n + 1
-    cnt = 1;
-    for j = 1:size(xsectionsdsc{i}, 1)
-        b = xsectionsdsc{i}(j, 1);
-        h = xsectionsdsc{i}(j, 2);
-        y = xsectionsdsc{i}(j, 3);
-        if h > b
-            webHs(cnt) = max(webHs(cnt), xsectionsdsc{i}(j, 2));
-            cnt = cnt + 1;
-        end
-    end
-end
+diaphragmDist = 1200; % distance between diaphragms. Assume constant for ease of calculation.
 
 E = 4000;
 mu = 0.2;
 t = 1.27;
+
 S_tens = max(S_top, S_bot);
-S_comp = min(S_top, S_bot);
+S_comp = abs(min(S_top, S_bot));
 T_max = T_cent;
 T_gmax = max(T_glue);
-S_buck1 = 4*pi^2*E / (12 * (1 - mu^2)) * ((t/bTops)^2);
-S_buck2 = 4*pi^2*E / (12 * (1 - mu^2)) * ((t/)^2);
-S_buck3 = 6*pi^2*E / (12*(1-mu^2)) * (t/ybars)^2;
-T_buck = 5*pi^2*E/(12*(1-mu^2)) * ((t/webHs)^2 + (t/webDist)^2);
+S_buck1 = 4*pi^2*E ./ (12 * (1 - mu^2)) .* ((topConstThick/topConstWidth)^2);
+S_buck2 = 0.4254*pi^2*E ./ (12 * (1 - mu^2)) .* ((topFreeThick/topFreeWidth)^2);
+
+S_buck3 = 6*pi^2*E ./ (12*(1-mu^2)) .* (t./(ybars - topConstThick)).^2;
+
+T_buck = 5*pi^2*E ./ (12*(1-mu^2)) .* ((t./(ybots)).^2 + (t/diaphragmDist).^2);
 
 
 %% 5. FOS
-% FOS_tens =  
-% FOS_comp = 
-% FOS_shear = 
-% FOS_glue = 
-% FOS_buck1 = 
-% FOS_buck2 = 
-% FOS_buck3 = 
-% FOS_buckV = 
+FOS_tens = 30 ./ S_tens;
+FOS_comp = 6 ./ S_comp;
+FOS_shear = 4 ./ T_max;
+FOS_glue = 2 ./ T_gmax;
+FOS_buck1 = S_buck1 ./ S_comp;
+FOS_buck2 = S_buck2 ./ S_comp;
+FOS_buck3 = S_buck3 ./ S_comp;
+FOS_buckV = T_buck ./ T_max;
 
 %% 6. Min FOS and the failure load Pfail
-% minFOS = 
-% Pf =
-% %% 7. Vfail and Mfail
-% Mf_tens = 
-% Mf_comp = 
-% Vf_shear = 
-% Vf_glue = 
-% Mf_buck1 = 
-% Mf_buck2 = 
-% Mf_buck3 = 
-% Vf_buckV = 
+FOSs = [min(FOS_tens), min(FOS_comp), min(FOS_shear), min(FOS_glue), min(FOS_buck1), min(FOS_buck2), min(FOS_buck3), min(FOS_buckV)];
+minFOS = min(FOSs);
+FOSs
+Pf = sum(P_train) * minFOS;
+Pf
+%% 7. Vfail and Mfail
+Mf_tens = FOS_tens .* BME;
+Mf_comp = FOS_comp .* BME;
+Vf_shear = FOS_shear .* SFE;
+Vf_glue = FOS_glue .* SFE;
+Mf_buck1 = FOS_buck1 .* BME;
+Mf_buck2 = FOS_buck2 .* BME;
+Mf_buck3 = FOS_buck3 .* BME;
+Vf_buckV = FOS_buckV .* SFE;
 
 
 %% 8. Output plots of Vfail and Mfail
-% subplot(2,3,1)
-% hold on; grid on; grid minor;
-% plot(x, Vf_shear, 'r')
-% plot(x, -Vf_shear.* SFD, 'r')
-% plot(x, SFDi, 'k');
-% plot([0, L], [0, 0], 'k', 'LineWidth', 2)
-% legend('Matboard Shear Failure')
-% xlabel('Distance along bridge (mm)')
-% ylabel('Shear Force (N)')
+subplot(2,3,1)
+hold on; grid on; grid minor;
+plot(x, Vf_shear, 'r')
+plot(x, SFE, 'k');
+plot([0, L], [0, 0], 'k', 'LineWidth', 2)
+legend('Matboard Shear Failure')
+xlabel('Distance along bridge (mm)')
+ylabel('Absolute Max. Shear Force (N)')
+
+subplot(2, 3, 2)
+hold on; grid on; grid minor;
+plot(x, Vf_glue, 'r')
+plot(x, SFE, 'k');
+plot([0, L], [0, 0], 'k', 'LineWidth', 2)
+legend('Glue Shear Failure')
+xlabel('Distance along bridge (mm)')
+ylabel('Absolute Max. Shear Force (N)')
+
+subplot(2, 3, 3)
+hold on; grid on; grid minor;
+plot(x, Vf_buckV, 'r')
+plot(x, SFE, 'k');
+plot([0, L], [0, 0], 'k', 'LineWidth', 2)
+legend('Matboard Shear Buckling Failure')
+xlabel('Distance along bridge (mm)')
+ylabel('Absolute Max. Shear Force (N)')
+
+subplot(2, 3, 4)
+hold on; grid on; grid minor;
+plot(x, Mf_tens, 'r')
+plot(x, Mf_comp, 'b')
+plot(x, BME, 'k');
+plot([0, L], [0, 0], 'k', 'LineWidth', 2)
+legend('Matboard Tension Failure', 'Matboard Compression Failure')
+xlabel('Distance along bridge (mm)')
+ylabel('Bending moment (Nmm)')
+
+subplot(2, 3, 5)
+hold on; grid on; grid minor;
+plot(x, Mf_buck1, 'r')
+plot(x, Mf_buck2, 'b')
+plot(x, BME, 'k');
+plot([0, L], [0, 0], 'k', 'LineWidth', 2)
+legend('Matboard Buckling Failure, Top Flange - Mid', 'Matboard Buckling Failure, Top Flange - Sides')
+xlabel('Distance along bridge (mm)')
+ylabel('Bending moment (Nmm)')
+
+subplot(2, 3, 6)
+hold on; grid on; grid minor;
+plot(x, Mf_buck3, 'r')
+plot(x, BME, 'k');
+plot([0, L], [0, 0], 'k', 'LineWidth', 2)
+legend('Matboard Buckling Failure, Webs')
+xlabel('Distance along bridge (mm)')
+ylabel('Bending moment (Nmm)')
