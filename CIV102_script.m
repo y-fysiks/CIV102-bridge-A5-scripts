@@ -11,8 +11,9 @@ x = linspace(0, L, n+1); % x-axis generate n + 1 evenly spaced points
 % **Coordinates measured as right and down positive**
 section1 = [100, 1.27, 1.27/2;
             80, 1.27, 1.27/2 + 75;
-            1.27 * 2, 75, 75 / 2 + 1.27;
-            10, 1.27, 3 * 1.27 / 2]; % b, h, ybar
+            1.27 * 2, 75 - 1.27, (75 - 1.27) / 2 + 1.27;
+            10, 1.27, 3 * 1.27 / 2;
+            10, 0.0001, 1.27]; % b, h, ybar. last line is glue width,
 
 xsections = {section1, section1}; % cell array of all cross sections
 
@@ -36,7 +37,7 @@ x_train = x_train - 52;
 P_train_LC1 = [1 1 1 1 1 1] * (P/6);
 P_train_LC2 = [1.35 1.35 1 1 1 1] * (P/6);
 
-P_train = P_train_LC2;
+P_train = P_train_LC1 ;
 
 % array of locations the end of the train can take, in intervals of 1mm
 train_locs = (-x_train(end)):1:L;
@@ -193,7 +194,7 @@ for i = 1:n + 1
         b = xsectionsdsc{i}(j, 1);
         h = xsectionsdsc{i}(j, 2);
         y = xsectionsdsc{i}(j, 3);
-        yb = round(ybars(i));
+        yb = round(ybars(i), 2);
         y1 = round(y - (h / 2), 2);
             y2 = round(y + (h / 2), 2);
         if y2 >= yb && y1 < yb
@@ -212,10 +213,10 @@ for i = 1:n + 1
             b = xsectionsdsc{i}(k, 1);
             h = xsectionsdsc{i}(k, 2);
             y = xsectionsdsc{i}(k, 3);
-            y1 = round(y - (h / 2), 2);
-            y2 = round(y + (h / 2), 2);
-            glueh = round(glueheights(j), 2);
-            if y2 >= glueh && y1 < glueh
+            y1 = round(y - (h / 2), 5);
+            y2 = round(y + (h / 2), 5);
+            glueh = round(glueheights(j), 5);
+            if y2 > glueh && y1 < glueh
                 bBot = bBot + b;
             end
 
@@ -271,9 +272,18 @@ FOS_buckV = T_buck ./ T_max;
 %% 6. Min FOS and the failure load Pfail
 FOSs = [min(FOS_tens), min(FOS_comp), min(FOS_shear), min(FOS_glue), min(FOS_buck1), min(FOS_buck2), min(FOS_buck3), min(FOS_buckV)];
 minFOS = min(FOSs);
-FOSs
 Pf = sum(P_train) * minFOS;
-Pf
+
+fprintf(['Factors of Safety\n' ...
+         '  Matboard Tensile: %.2f\n' ...
+         '  Matboard Compressive: %.2f\n' ...
+         '  Matboard Shear: %.2f\n' ...
+         '  Glue Shear: %.2f\n' ...
+         '  Buckling Case 1: %.2f\n' ...
+         '  Buckling Case 2: %.2f\n' ...
+         '  Buckling Case 3: %.2f\n' ...
+         '  Shear Buckling: %.2f\n'], FOSs)
+fprintf('\nFailure load: %.2f N\n', Pf)
 %% 7. Vfail and Mfail
 Mf_tens = FOS_tens .* BME;
 Mf_comp = FOS_comp .* BME;
