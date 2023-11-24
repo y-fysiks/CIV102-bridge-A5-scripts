@@ -10,6 +10,11 @@ x = linspace(0, L, n+1); % x-axis generate n + 1 evenly spaced points
 % section[i,1] = b, section[i, 2] = h, section[i, 3] = ybar
 % **Coordinates measured as right and down positive**
 section1 = [100, 1.27, 1.27/2;
+            80, 1.27, 1.27/2 + 75 + 1.27;
+            1.27 * 2, 75 - 1.27, (75 - 1.27) / 2 + 1.27;
+            10, 1.27, 3 * 1.27 / 2;
+            10, 0.0001, 1.27]; % b, h, ybar. last line is glue width,
+sectionv2 = [100, 1.27*2, 1.27;
             80, 1.27, 1.27/2 + 75;
             1.27 * 2, 75 - 1.27, (75 - 1.27) / 2 + 1.27;
             10, 1.27, 3 * 1.27 / 2;
@@ -23,7 +28,7 @@ numxsections = length(xsections);
 
 % Define top flange parameters
 topConstThick = 1.27;
-topConstWidth = 80 - 2 * 1.27;
+topConstWidth = 80;
 topFreeThick = 1.27;
 topFreeWidth = 10;
 
@@ -37,7 +42,7 @@ x_train = x_train - 52;
 P_train_LC1 = [1 1 1 1 1 1] * (P/6);
 P_train_LC2 = [1.35 1.35 1 1 1 1] * (P/6);
 
-P_train = P_train_LC1 ;
+P_train = P_train_LC1;
 
 % array of locations the end of the train can take, in intervals of 1mm
 train_locs = (-x_train(end)):1:L;
@@ -76,6 +81,11 @@ for i = 1:n_train
 end
 SFE = max(abs(SFDi)); % SFD envelope
 BME = max(BMDi); % BMD envelope
+
+figure
+subplot(1, 2, 1)
+plot(x, SFE);
+
 
 %% 2. Geometric properties of cross sections
 
@@ -241,7 +251,7 @@ for j = 1:numglues
 end
 
 %% 4. Material and Thin Plate Buckling Capacities
-diaphragmDist = 1200; % distance between diaphragms. Assume constant for ease of calculation.
+diaphragmDist = 400; % distance between diaphragms. Assume constant for ease of calculation.
 
 E = 4000;
 mu = 0.2;
@@ -251,12 +261,14 @@ S_tens = max(S_top, S_bot);
 S_comp = abs(min(S_top, S_bot));
 T_max = T_cent;
 T_gmax = max(T_glue);
+% Buckling case 1 (middle of top flange)
 S_buck1 = 4*pi^2*E ./ (12 * (1 - mu^2)) .* ((topConstThick/topConstWidth)^2);
+% Buckling case 2 (sides of top flange)
 S_buck2 = 0.4254*pi^2*E ./ (12 * (1 - mu^2)) .* ((topFreeThick/topFreeWidth)^2);
-
+% Buckling case 3 (Webs)
 S_buck3 = 6*pi^2*E ./ (12*(1-mu^2)) .* (t./(ybars - topConstThick)).^2;
-
-T_buck = 5*pi^2*E ./ (12*(1-mu^2)) .* ((t./(ybots)).^2 + (t/diaphragmDist).^2);
+% Shear buckling
+T_buck = 5*pi^2*E ./ (12*(1-mu^2)) .* (((t./(ybots - topConstThick)).^2) + ((t/diaphragmDist).^2));
 
 
 %% 5. FOS
@@ -267,7 +279,7 @@ FOS_glue = 2 ./ T_gmax;
 FOS_buck1 = S_buck1 ./ S_comp;
 FOS_buck2 = S_buck2 ./ S_comp;
 FOS_buck3 = S_buck3 ./ S_comp;
-FOS_buckV = T_buck ./ T_max;
+FOS_buckV = T_buck ./ abs(T_max);
 
 %% 6. Min FOS and the failure load Pfail
 FOSs = [min(FOS_tens), min(FOS_comp), min(FOS_shear), min(FOS_glue), min(FOS_buck1), min(FOS_buck2), min(FOS_buck3), min(FOS_buckV)];
