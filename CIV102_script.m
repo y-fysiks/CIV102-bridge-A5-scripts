@@ -9,32 +9,87 @@ x = linspace(0, L, n+1); % x-axis generate n + 1 evenly spaced points
 % rectangle. 
 % section[i,1] = b, section[i, 2] = h, section[i, 3] = ybar
 % **Coordinates measured as right and down positive**
+
+%% design 0
 section1 = [100, 1.27, 1.27/2;
-            80, 1.27, 1.27/2 + 75 + 1.27;
-            1.27 * 2, 75 - 1.27, (75 - 1.27) / 2 + 1.27;
-            10, 1.27, 3 * 1.27 / 2;
-            10, 0.0001, 1.27]; % b, h, ybar. last line is glue width,
-sectionv2 = [100, 1.27*2, 1.27;
             80, 1.27, 1.27/2 + 75;
             1.27 * 2, 75 - 1.27, (75 - 1.27) / 2 + 1.27;
             10, 1.27, 3 * 1.27 / 2;
             10, 0.0001, 1.27]; % b, h, ybar. last line is glue width,
 
-xsections = {section1, section1}; % cell array of all cross sections
+% Iteration 1
+sectionv2 = [100, 1.27*2, 1.27; % top flange
+            80, 1.27, 1.27/2 + 75 + 1.27; % bottom flange
+            1.27 * 2, 75 - 1.27, (75 - 1.27) / 2 + 2*1.27; % 
+            10, 1.27, 2*1.27 + 1.27 / 2; % glue tabs
+            10, 0.0001, 2*1.27]; % b, h, ybar. last line is glue width,
+
+% Iteration 2
+sectionv3 = [100, 1.27*2, 1.27; % top flange
+            1.27 * 2, 75, (75) / 2 + 2*1.27; % 
+            10, 1.27, 2*1.27 + 1.27 / 2; % glue tabs
+            10, 0.0001, 2*1.27]; % b, h, ybar. last line is glue width,
+
+% Iteration 3
+sectionv4 = [110, 1.27*2, 1.27; % top flange
+            1.27 * 2, 75, (75) / 2 + 2*1.27; % 
+            10, 1.27, 2*1.27 + 1.27 / 2; % glue tabs
+            10, 0.0001, 2*1.27]; % b, h, ybar. last line is glue width,
+
+% Iteration 4
+section1v5 = [110, 1.27*2, 1.27; % top flange
+            1.27 * 2, 75, 75 / 2 + 2*1.27; % 
+            10, 1.27, 2*1.27 + 1.27 / 2; % glue tabs
+            10, 0.0001, 2*1.27]; % b, h, ybar. last line is glue width,
+
+section2v5 = [110, 1.27*2, 1.27; % top flange
+            1.27 * 2, 150, 150 / 2 + 2*1.27; % 
+            10, 1.27, 2*1.27 + 1.27 / 2; % glue tabs
+            10, 0.0001, 2*1.27]; % b, h, ybar. last line is glue width,
+
+% Iteration 5
+section1v6 = [110, 1.27*2, 1.27; % top flange
+            1.27 * 2, 120, 100 / 2 + 2*1.27; % 
+            10, 1.27, 2*1.27 + 1.27 / 2; % glue tabs
+            10, 0.0001, 2*1.27]; % b, h, ybar. last line is glue width,
+
+section2v6 = [140, 1.27*2, 1.27; % top flange
+            1.27 * 2, 160, 120 / 2 + 2*1.27; % 
+            10, 1.27, 2*1.27 + 1.27 / 2; % glue tabs
+            10, 0.0001, 2*1.27]; % b, h, ybar. last line is glue width,
+
+% Iteration 6
+section1v7 = [100, 1.27*2, 1.27; % top flange
+            1.27 * 2, 120, 100 / 2 + 2*1.27; % 
+            10, 1.27, 2*1.27 + 1.27 / 2; % glue tabs
+            10, 0.0001, 2*1.27]; % b, h, ybar. last line is glue width,
+
+section2v7 = [100, 1.27*2, 1.27; % top flange
+            1.27 * 2, 160, 120 / 2 + 2*1.27; % 
+            10, 1.27, 2*1.27 + 1.27 / 2; % glue tabs
+            10, 0.0001, 2*1.27]; % b, h, ybar. last line is glue width,
+
+xsections = {section1v7, section2v7, section2v7, section1v7}; % cell array of all cross sections
+
 
 % define the location of each cross section. At least two required.
-xsectionpts = [0, 1200]; 
-numxsections = length(xsections);
+xsectionpts = [0, 500, 700, 1200]; 
 
 % Define top flange parameters
-topConstThick = 1.27;
+topConstThick = 1.27*2;
 topConstWidth = 80;
-topFreeThick = 1.27;
+topFreeThick = 1.27*2;
 topFreeWidth = 10;
 
 % Define glue joints
-glueheights = [0, 1.27]; %#ok<*NBRAK2>
+glueheights = [2*1.27, 1.27];
+
+% distance between diaphragms. Assume constant for ease of calculation.
+diaphragmDist = 100;
+
 numglues = length(glueheights);
+
+numxsections = length(xsections);
 
 %% 1. SFD, BMD under train loading
 x_train = [52 228 392 568 732 908]; % Train Load Locations
@@ -95,18 +150,19 @@ xsectionsdsc(round(xsectionpts(1) / L * n) + 1) = xsections(1);
 for i = 1:(numxsections - 1)
     idx1 = round(xsectionpts(i) / L * n) + 1;
     idx2 = round(xsectionpts(i + 1) / L * n) + 1;
-    ratio = (xsections{i + 1} - xsections{i}) ./ (xsectionpts(i + 1) - xsectionpts(i));
+    ratio = (xsections{i + 1} - xsections{i}) ./ (idx2 - idx1);
     xsectionsdsc{idx1} = xsections{i};
-    for j = (idx1 + 1):(idx2)
-        xsectionsdsc{j} = xsections{i} + ratio * (j / n * L);
+    xsectionsdsc{idx2} = xsections{i + 1};
+    for j = 1:(idx2-idx1-1)
+        xsectionsdsc{idx1 + j} = xsections{i} + ratio * (j);
     end
 end
 
-ybots = zeros(1, n + 1);
 for i = 1:n + 1
-    ybots(i) = max(xsectionsdsc{i}(:, 2) / 2 + xsectionsdsc{i}(:, 3));
+    
 end
 
+ybots = zeros(1, n + 1);
 ybars = zeros(1, n + 1);
 Is = zeros(1, n + 1);
 QCent = zeros(1, n + 1);
@@ -115,14 +171,14 @@ Areas = zeros(1, n + 1);
 
 % ybar, I, Qcent, Qglues
 for i = 1:(n + 1)
-    if i > 1 && isequal(xsectionsdsc{i}, xsectionsdsc{i - 1})
-        ybars(i) = ybars(i - 1);
-        Is(i) = Is(i - 1);
-        QCent(i) = QCent(i - 1);
-        Qglues(:, i) = Qglues(:, i - 1);
-        Areas(i) = Areas(i - 1);
-        continue
-    end
+    % if i > 1 && isequal(xsectionsdsc{i}, xsectionsdsc{i - 1})
+    %     ybars(i) = ybars(i - 1);
+    %     Is(i) = Is(i - 1);
+    %     QCent(i) = QCent(i - 1);
+    %     Qglues(:, i) = Qglues(:, i - 1);
+    %     Areas(i) = Areas(i - 1);
+    %     continue
+    % end
     % ybar, I, Qcent
     % sum the areas times distance to centroid of each individual square
     sumAD = 0;
@@ -137,6 +193,8 @@ for i = 1:(n + 1)
         Areas(i) = Areas(i) + b * h;
     end
     ybars(i) = sumAD / sumAreas;
+
+    ybots(i) = max(xsectionsdsc{i}(:, 2) ./ 2 + xsectionsdsc{i}(:, 3));
 
     % I
     % bh^3/12 for every bit
@@ -242,7 +300,7 @@ end
 
 %% 3. Calculate Applied Stress
 T_glue = zeros(numglues, n + 1);
-S_top = -ybars .* BME ./ Is;
+S_top = ybars .* BME ./ Is;
 S_bot = (ybots - ybars) .* BME ./ Is;
 T_cent = SFE .* QCent ./ Is ./ min(bCentBot, bCentTop);
 
@@ -251,14 +309,13 @@ for j = 1:numglues
 end
 
 %% 4. Material and Thin Plate Buckling Capacities
-diaphragmDist = 400; % distance between diaphragms. Assume constant for ease of calculation.
 
 E = 4000;
 mu = 0.2;
 t = 1.27;
 
-S_tens = max(S_top, S_bot);
-S_comp = abs(min(S_top, S_bot));
+S_tens = S_bot;
+S_comp = S_top;
 T_max = T_cent;
 T_gmax = max(T_glue);
 % Buckling case 1 (middle of top flange)
