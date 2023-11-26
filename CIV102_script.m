@@ -53,27 +53,75 @@ section1v6 = [110, 1.27*2, 1.27; % top flange
             10, 1.27, 2*1.27 + 1.27 / 2; % glue tabs
             10, 0.0001, 2*1.27]; % b, h, ybar. last line is glue width,
 
-section2v6 = [140, 1.27*2, 1.27; % top flange
+section2v6 = [110, 1.27*2, 1.27; % top flange
             1.27 * 2, 160, 120 / 2 + 2*1.27; % 
             10, 1.27, 2*1.27 + 1.27 / 2; % glue tabs
             10, 0.0001, 2*1.27]; % b, h, ybar. last line is glue width,
 
 % Iteration 6
 section1v7 = [100, 1.27*2, 1.27; % top flange
-            1.27 * 2, 120, 100 / 2 + 2*1.27; % 
+            1.27 * 2, 120, 120 / 2 + 2*1.27; % 
             10, 1.27, 2*1.27 + 1.27 / 2; % glue tabs
             10, 0.0001, 2*1.27]; % b, h, ybar. last line is glue width,
 
 section2v7 = [100, 1.27*2, 1.27; % top flange
-            1.27 * 2, 160, 120 / 2 + 2*1.27; % 
+            1.27 * 2, 160, 160 / 2 + 2*1.27; % 
             10, 1.27, 2*1.27 + 1.27 / 2; % glue tabs
             10, 0.0001, 2*1.27]; % b, h, ybar. last line is glue width,
 
-xsections = {section1v7, section2v7, section2v7, section1v7}; % cell array of all cross sections
+% % Iteration 8
+% section1v8 = [100, 1.27*3, 1.27; % top flange
+%             1.27 * 2, 100-3*1.27, (100-3*1.27) / 2 + 3*1.27; % 
+%             10, 1.27, 3*1.27 + 1.27 / 2; % glue tabs
+%             10, 0.0001, 3*1.27]; % b, h, ybar. last line is glue width,
+% 
+% section2v8 = [100, 1.27*3, 1.27; % top flange
+%             1.27 * 2, 150, 150 / 2 + 3*1.27; % 
+%             10, 1.27, 3*1.27 + 1.27 / 2; % glue tabs
+%             10, 0.0001, 3*1.27]; % b, h, ybar. last line is glue width,
+% 
+% section3v8 = [100, 1.27*3, 1.27; % top flange
+%             1.27 * 4, 100-3*1.27, (100-3*1.27) / 2 + 3*1.27; % 
+%             10, 1.27, 3*1.27 + 1.27 / 2; % glue tabs
+%             10, 0.0001, 3*1.27]; % b, h, ybar. last line is glue width,
 
+% Iteration 9
+section1v9 = [100, 1.27*4 1.27*4/2; % top flange
+              %80, 1.27, 1.27/2 + 100;
+              1.27 * 2, (80 - 4*1.27), (80 - 4*1.27) / 2 + 4*1.27; % 
+              10, 1.27, 4*1.27 + 1.27 / 2; % glue tabs
+              10, 0.0001, 4*1.27]; % b, h, ybar. last line is glue width,
+
+section2v9 = [160, 1.27*4 1.27*4/2; % top flange
+              %80, 1.27, 1.27/2 + 100;
+              1.27 * 2, (80 - 4*1.27), (80 - 4*1.27) / 2 + 4*1.27; % 
+              10, 1.27, 4*1.27 + 1.27 / 2; % glue tabs
+              10, 0.0001, 4*1.27]; % b, h, ybar. last line is glue width,
+
+% Iteration 10
+section1v8 = [100, 1.27*2, 1.27; % top flange
+             60, 0.0001, 2*1.27 + 1.27/2;
+            1.27 * 2, 120-2*1.27, (120-2*1.27) / 2 + 2*1.27; % 
+            20, 1.27, 2*1.27 + 1.27 / 2; % glue tabs
+            10, 0.0001, 2*1.27]; % b, h, ybar. last line is glue width,
+
+section2v8 = [100, 1.27*2, 1.27; % top flange
+              60, 0.0001, 2*1.27 + 1.27/2;
+            1.27 * 2, 135, 135 / 2 + 2*1.27; % 
+            20, 1.27, 2*1.27 + 1.27 / 2; % glue tabs
+            10, 0.0001, 2*1.27]; % b, h, ybar. last line is glue width,
+
+section3v8 = [100, 1.27*2, 1.27; % top flange
+              60, 0.0001, 2*1.27 + 1.27/2;
+            1.27 * 3, 120-2*1.27, (120-2*1.27) / 2 + 2*1.27; % 
+            20, 1.27, 2*1.27 + 1.27 / 2; % glue tabs
+            10, 0.0001, 2*1.27]; % b, h, ybar. last line is glue width,
+
+xsections = {section3v8, section3v8, section1v8, section2v8, section2v8, section1v8, section3v8, section3v8}; % cell array of all cross sections
+% xsections = {section1v9, section2v9, section1v9};
 
 % define the location of each cross section. At least two required.
-xsectionpts = [0, 500, 700, 1200]; 
+xsectionpts = [0, 10, 11, 500, 700, 1189, 1190, 1200]; 
 
 % Define top flange parameters
 topConstThick = 1.27*2;
@@ -85,7 +133,8 @@ topFreeWidth = 10;
 glueheights = [2*1.27, 1.27];
 
 % distance between diaphragms. Assume constant for ease of calculation.
-diaphragmDist = 100;
+diaphragmDists = [118, 177, 118];
+diaphragmLocs = [0, 246, 945, 1200];
 
 numglues = length(glueheights);
 
@@ -97,7 +146,7 @@ x_train = x_train - 52;
 P_train_LC1 = [1 1 1 1 1 1] * (P/6);
 P_train_LC2 = [1.35 1.35 1 1 1 1] * (P/6);
 
-P_train = P_train_LC1;
+P_train = P_train_LC2;
 
 % array of locations the end of the train can take, in intervals of 1mm
 train_locs = (-x_train(end)):1:L;
@@ -105,6 +154,9 @@ train_locs = (-x_train(end)):1:L;
 n_train = length(train_locs); % number of train locations
 SFDi = zeros(n_train, n+1); % 1 SFD for each train location
 BMDi = zeros(n_train, n+1); % 1 BMD for each train location
+
+max_moment = 0;
+max_m_pos = 0;
 
 % Solve for SFD and BMD with the train at different locations
 for i = 1:n_train
@@ -133,6 +185,12 @@ for i = 1:n_train
     % Integrate the SFD to get BMD
     BMDi(i, :) = cumsum(SFDi(i,:));
 
+    curmaxM = max(BMDi(i, :));
+    if curmaxM > max_moment
+        max_moment = curmaxM;
+        max_m_pos = train_locs(i);
+    end
+
 end
 SFE = max(abs(SFDi)); % SFD envelope
 BME = max(BMDi); % BMD envelope
@@ -140,6 +198,10 @@ BME = max(BMDi); % BMD envelope
 figure
 subplot(1, 2, 1)
 plot(x, SFE);
+
+fprintf("Max moment: %.2f\n" + ...
+        "Location of leftmost train wheel: %.2f\n", ...
+        max_moment, max_m_pos);
 
 
 %% 2. Geometric properties of cross sections
@@ -158,8 +220,8 @@ for i = 1:(numxsections - 1)
     end
 end
 
-for i = 1:n + 1
-    
+for i = 1+292:n + 1-292
+    xsectionsdsc{i}(2, 2) = 1.27;
 end
 
 ybots = zeros(1, n + 1);
@@ -297,6 +359,15 @@ for i = 1:n + 1
     end
 end
 
+diaphragmDistsdsc = zeros(1, n + 1);
+
+for i = 1:length(diaphragmLocs) - 1
+    idx1 = diaphragmLocs(i) + 1
+    idx2 = diaphragmLocs(i + 1) + 1
+    diaphragmDistsdsc(idx1:idx2 - 1) = diaphragmDists(i);
+    
+end
+
 
 %% 3. Calculate Applied Stress
 T_glue = zeros(numglues, n + 1);
@@ -325,7 +396,7 @@ S_buck2 = 0.4254*pi^2*E ./ (12 * (1 - mu^2)) .* ((topFreeThick/topFreeWidth)^2);
 % Buckling case 3 (Webs)
 S_buck3 = 6*pi^2*E ./ (12*(1-mu^2)) .* (t./(ybars - topConstThick)).^2;
 % Shear buckling
-T_buck = 5*pi^2*E ./ (12*(1-mu^2)) .* (((t./(ybots - topConstThick)).^2) + ((t/diaphragmDist).^2));
+T_buck = 5*pi^2*E ./ (12*(1-mu^2)) .* (((t./(ybots - topConstThick)).^2) + ((t./diaphragmDistsdsc).^2));
 
 
 %% 5. FOS
@@ -420,3 +491,37 @@ plot([0, L], [0, 0], 'k', 'LineWidth', 2)
 legend('Matboard Buckling Failure, Webs')
 xlabel('Distance along bridge (mm)')
 ylabel('Bending moment (Nmm)')
+
+figure
+hold on
+plot(x, zeros(1, n + 1), "k")
+plot(x, -ybots, "k")
+ylim([-500, 0])
+
+% for i=0:10
+%     location = i*diaphragmDist + 10;
+%     height = ybots(location);
+%     fprintf('loc: %.2f   height: %.2f\n', location, height + 5)
+% end
+
+% for i = 1:(numxsections + 1) / 2
+%     figure
+%     hold on;
+%     for j = 1:size(xsections{i}, 1)
+%         b = xsections{i}(j, 1);
+%         h = xsections{i}(j, 2);
+%         y = xsections{i}(j, 3);
+%         x1 = -b/2;
+%         x2 = b/2;
+%         y1 = y + h/2;
+%         y2 = y-h/2;
+%         % x1, y2 -> x2, y2
+%         % x2, y2 -> x2, y1
+%         % x2, y1 -> x1, y1
+%         % x1, y1 -> x1, y2
+%         plot([x1 x2], [y2 y2], "b-")
+%         plot([x2 x2], [y2 y1], "b-")
+%         plot([x2 x1], [y1 y1], "b-")
+%         plot([x1 x1], [y1 y2], "b-")
+%     end
+% end
